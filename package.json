@@ -1,0 +1,30 @@
+{
+  "name": "calculadoraredis",
+  "version": "1.0.0",
+  "description": "Microservicio de práctica, calculadora utilizando Redis",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucianomella/CalculadoraRedis.git"
+  },
+  "keywords": [
+    "calculadora",
+    "node",
+    "redis"
+  ],
+  "author": "Luciano Mella",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/lucianomella/CalculadoraRedis/issues"
+  },
+  "homepage": "https://github.com/lucianomella/CalculadoraRedis#readme",
+  "dependencies": {
+    "async": "^3.2.0",
+    "express": "^4.17.1",
+    "redis": "^3.0.2"
+  }
+}
