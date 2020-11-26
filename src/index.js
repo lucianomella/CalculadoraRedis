@@ -6,6 +6,7 @@ let app = express();
 app.use(express.json());
 app.use(bodyParser.text({ type: 'text/plain' }))
 
+app.use('/calcula', require('./routes/calcula'));
 
 app.listen(PORT);
 console.log(`Express server listening on port ${PORT}`);
