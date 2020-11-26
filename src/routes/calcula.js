@@ -127,22 +127,11 @@ let calcular = async function (texto) {
             }
             resp = await asignaDatosRedis('suma-', resp, resp2, consulta.suma);
         }
-
-
     }
     client.set(texto, texto + ' = ' + resp);
 
 };
 
-let validaOperacion = function (texto) {
-    if (texto.match('-') != -1) {
-        return calcularResta(texto);
-    } else if (texto.match('*') != -1) {
-        return calcularMultiplicacion(texto);
-    } else if (texto.match('/') != -1) {
-        return calcularDividir(texto);
-    }
-}
 
 let obtenerPrimerParametro = async function (texto) {
     let resp=0;
