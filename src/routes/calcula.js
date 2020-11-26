@@ -75,17 +75,18 @@ router.post("/output", function (req, res) {
     }
 })
 
-let asignaDatosRedis = function (resp, aux, fun) {
+let asignaDatosRedis = function (tipo, resp, aux, fun) {
     let data = { a: resp, b: aux };
+    let key = tipo + JSON.stringify(data);
     return new Promise(function (resolve, reject) {
-        client.get(JSON.stringify(data), function (err, reply) {
-            console.log('asignaDatosRedis - data:' + JSON.stringify(data))
+        client.get(key, function (err, reply) {
+            console.log('asignaDatosRedis - key:' + key)
             console.log('asignaDatosRedis - reply: ' + reply)
             if (utils.isNumber(reply)) {
                 resolve(Number(reply));
             } else {
                 fun(data).then((value) => {
-                    client.set(JSON.stringify(data), value);
+                    client.set(key, value);
                     resolve(value);
                 });
             }
@@ -97,26 +98,40 @@ let asignaDatosRedis = function (resp, aux, fun) {
 let calcular = async function (texto) {
     let resp = 0;
     let sumar = String(texto).split('+');
-    console.log('entró en calcular. Texto:' + texto);
+    console.log('Entró en calcular. Texto:' + texto);
 
-    console.log('Sumar:' + JSON.stringify(sumar));
+    console.log('Calcular:' + JSON.stringify(sumar));
     for (let i = 0; i < sumar.length; i++) {
         if (utils.isNumber(sumar[i])) {
-            resp = await asignaDatosRedis(resp, sumar[i], consulta.suma);
+            console.log("Es valido: " + sumar[i])
+            resp = await asignaDatosRedis('suma-', resp, sumar[i], consulta.suma);
         } else {
-            let resp2 = 0
-            if (sumar[i].match('-') != -1) {
+            let resp2 = 0;
+            console.log("No es valido: " + sumar[i])
+
+            if (sumar[i].split('-').length > 1) {
+                console.log('es resta')
                 resp2 = await calcularResta(sumar[i]);
-            } else if (sumar[i].match('*') != -1) {
-                resp2 = await calcularMultiplicacion(sumar[i]);
-            } else if (sumar[i].match('/') != -1) {
-                resp2 = await calcularDividir(sumar[i]);
+            } else {
+                console.log('no es resta')
+                if (sumar[i].split('*').length > 1) {
+                    console.log('es Multiplicación')
+                    resp2 = await calcularMultiplicacion(sumar[i]);
+                } else {
+                    console.log('no es Multiplicación')
+                    if (sumar[i].split('/').length > 1) {
+                        console.log('es división')
+                        resp2 = await calcularDividir(sumar[i]);
+                    }
+                }
             }
-            resp = await asignaDatosRedis(resp, resp, consulta.suma);
+            resp = await asignaDatosRedis('suma-', resp, resp2, consulta.suma);
         }
+
+
     }
     client.set(texto, texto + ' = ' + resp);
-   
+
 };
 
 let validaOperacion = function (texto) {
@@ -129,51 +144,78 @@ let validaOperacion = function (texto) {
     }
 }
 
-let obtenerPrimerParametro = function (texto) {
+let obtenerPrimerParametro = async function (texto) {
+    let resp=0;
     if (utils.isNumber(texto)) {
         return texto;
     } else {
-        validaOperacion(texto, (aux) => {
-            return asignaDatosRedis(0, aux, consulta.suma);
-        });
+        let resp2 = 0;
+        console.log("No es valido: " + texto)
+
+        if (texto.split('-').length > 1) {
+            console.log('es resta')
+            resp2 = await calcularResta(texto);
+        } else {
+            console.log('no es resta')
+            if (texto.split('*').length > 1) {
+                console.log('es Multiplicación')
+                resp2 = await calcularMultiplicacion(texto);
+            } else {
+                console.log('no es Multiplicación')
+                if (texto.split('/').length > 1) {
+                    console.log('es división')
+                    resp2 = await calcularDividir(texto);
+                }
+            }
+        }
+        return asignaDatosRedis('suma-', resp, resp2, consulta.suma);
     }
 }
 
-let calcularResta = (texto) => {
+let calcularResta = async function (texto) {
+    
+    //return new Promise(function (resolve, reject) {
+    let resta = String(texto).split('-');
+    let resp = await obtenerPrimerParametro(resta[0]);
+    console.log('obtenerPrimerParametro 180:' + resp);
+    console.log('entró en calcularResta. Texto:' + texto);
+    console.log('Resta:' + JSON.stringify(resta));
+    for (let j =1; j < resta.length; j++) {
+        if (utils.isNumber(resta[j])) {
+            resp = await asignaDatosRedis('resta-', resp, resta[j], consulta.resta);
+        } else {
+            let resp2 = 0;
+            console.log("No es valido: " + resta[j])
 
-    return new Promise(function (resolve, reject) {
-        let resta = String(texto).split('-');
-        let resp = obtenerPrimerParametro(resta[0]);
-        console.log('entró en calcularResta. Texto:' + texto);
-        console.log('Resta:' + JSON.stringify(resta));
-        for (let j = 1; j < resta.length; j++) {
-            if (utils.isNumber(resta[j])) {
-                resp = asignaDatosRedis(resp, resta[j], consulta.resta);
+
+            if (resta[j].split('*').length > 1) {
+                console.log('es Multiplicación')
+                resp2 = await calcularMultiplicacion(resta[j]);
             } else {
-                validaOperacion(sumar[i], (aux) => {
-                    resp = asignaDatosRedis(resp, aux, consulta.resta);
-                    if (j == resta.length - 1) {
-                        resolve(resp);
-                    }
-                });
+                console.log('no es Multiplicación')
+                if (resta[j].split('/').length > 1) {
+                    console.log('es división')
+                    resp2 = await calcularDividir(resta[j]);
+                }
             }
-            if (j == resta.length - 1) {
-                resolve(resp);
-            }
+
+            resp = await asignaDatosRedis('suma-', resp, resp2, consulta.suma);
         }
-    });
+    }
+    return resp;
 }
 
-let calcularMultiplicacion = (texto) => {
+let calcularMultiplicacion = async function(texto) {
     let multi = String(texto).split('*');
     let resp = obtenerPrimerParametro(multi[0]);
-    for (let j = 1; j < sumar.length; j++) {
+    for (let j = 1; j < multi.length; j++) {
         if (utils.isNumber(multi[j])) {
-            resp = asignaDatosRedis(resp, multi[j], consulta.multi);
+            resp = await asignaDatosRedis('multi-', resp, multi[j], consulta.multi);
         } else {
-            validaOperacion(multi[j], (aux) => {
-                resp = asignaDatosRedis(resp, aux, consulta.multi);
-            });
+            if (multi[j].split('/').length > 1) {
+                console.log('es división')
+                resp2 = await calcularDividir(multi[j]);
+            }
         }
     }
     return resp;
@@ -182,9 +224,9 @@ let calcularMultiplicacion = (texto) => {
 let calcularDividir = (texto) => {
     let dividir = String(texto).split('/');
     let resp = obtenerPrimerParametro(dividir[0]);
-    for (let j = 1; j < sumar.length; j++) {
+    for (let j = 1; j < dividir.length; j++) {
         if (utils.isNumber(dividir[j])) {
-            resp = asignaDatosRedis(resp, dividir[i], consulta.dividir);
+            resp = asignaDatosRedis('divide-', resp, dividir[j], consulta.dividir);
         }
     }
     return resp;
