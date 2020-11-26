@@ -207,26 +207,28 @@ let calcularResta = async function (texto) {
 
 let calcularMultiplicacion = async function(texto) {
     let multi = String(texto).split('*');
-    let resp = obtenerPrimerParametro(multi[0]);
+    let resp = await obtenerPrimerParametro(multi[0]);
     for (let j = 1; j < multi.length; j++) {
         if (utils.isNumber(multi[j])) {
             resp = await asignaDatosRedis('multi-', resp, multi[j], consulta.multi);
         } else {
+            let resp2=0;
             if (multi[j].split('/').length > 1) {
                 console.log('es división')
                 resp2 = await calcularDividir(multi[j]);
             }
+            resp = await asignaDatosRedis('multi-', resp, resp2, consulta.multi);
         }
     }
     return resp;
 }
 
-let calcularDividir = (texto) => {
+let calcularDividir = async function (texto) {
     let dividir = String(texto).split('/');
-    let resp = obtenerPrimerParametro(dividir[0]);
+    let resp = await obtenerPrimerParametro(dividir[0]);
     for (let j = 1; j < dividir.length; j++) {
         if (utils.isNumber(dividir[j])) {
-            resp = asignaDatosRedis('divide-', resp, dividir[j], consulta.dividir);
+            resp = await asignaDatosRedis('divide-', resp, dividir[j], consulta.dividir);
         }
     }
     return resp;
