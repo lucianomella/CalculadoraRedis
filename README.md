@@ -74,7 +74,7 @@ Con la ayuda de Docker se crea un artefacto Redis y cuatro artefactos (con micro
 ## Para Implementar todos los componentes
 
 Esquema:
-! [Componentes] (./img/esquema.jpeg)
+![Componentes](./img/esquema.jpeg)
 
 Ubicar en el directorio anterior
 ~~~
